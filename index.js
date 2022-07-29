@@ -70,7 +70,8 @@ class Player {
   }
 }
 
-function getParams(req) {
+function getParams(socket, req) {
+  req || (req = socket.upgradeReq);
   return urlParse(req.url, true).query;
 }
 
@@ -119,13 +120,10 @@ let httpServer = http.createServer((req, res) => {
 
 let server = new WebSocketServer({
   server: httpServer,
-  path: '/',
-  disableHixie: true,
-  clientTracking: false,
   perMessageDeflate: false,
 });
 
-server.on('connection', (socket) => {
+server.on('connection', (socket, req) => {
   let room, player;
 
   socket.on('error', () => {
@@ -134,7 +132,7 @@ server.on('connection', (socket) => {
     }
   });
 
-  let params = getParams(socket.upgradeReq);
+  let params = getParams(socket, req);
   if (!params) {
     socket.close();
     return;
@@ -166,7 +164,7 @@ server.on('connection', (socket) => {
   }
 
   socket.on('message', (data) => {
-    let args = data.split(",").map(Number);
+    let args = data.toString().split(",").map(Number);
     let msg = args.shift();
     switch(msg) {
       case MSG.BUTTON_DOWN:
